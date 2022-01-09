@@ -5,10 +5,19 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     // Constructor for main window
     ui->setupUi(this);
-    //this->setCentralWidget(ui->textEdit);
-    QDate date_file = QDate::currentDate();
-    current_file = date_file.toString("dd/MM/yyyy") + ".txt";
+
+    // Define the main widget on this window
+    this->setCentralWidget(ui->splitter);
+
     setWindowTitle(current_file);
+
+    // Setup folder structure
+    setup_directories();
+
+    // Split vertical layout
+    ui->splitter->setStretchFactor(0,1);
+    ui->splitter->setStretchFactor(1,1);
+    ui->splitter->setSizes({2000, static_cast<int>(10000 / 1.618)});
 }
 
 
@@ -115,3 +124,63 @@ void MainWindow::on_actionRedo_triggered() {
     ui->textEdit->redo();
 }
 
+
+void MainWindow::on_treeView_expanded() {
+    ui->treeView->resizeColumnToContents(0);
+}
+
+
+void MainWindow::setup_directories(){
+
+    QFileSystemModel *model = new QFileSystemModel(this);
+    //model->setRootPath(QDir::currentPath());
+    model->setRootPath("/Users/hbates/");
+
+    QTreeView *tree = ui->treeView;
+    tree->setModel(model);
+    tree->hideColumn(1); // Size
+    tree->hideColumn(2); // Type
+    tree->hideColumn(3); // Date modified
+    tree->resizeColumnToContents(0);
+
+    tree->setRootIndex(model->index("/Users/hbates"));
+}
+
+
+void MainWindow::on_treeView_doubleClicked(const QModelIndex &index) {
+    QFileSystemModel *model = new QFileSystemModel(this);
+    QString filepath = model->filePath(index);
+    if(model->isDir(index)){
+        return;
+    }
+    open_file_from_tree(filepath);
+    delete model;
+}
+
+void MainWindow::open_file_from_tree(QString filepath) {
+    // Return if file name is not specified (the user clicked cancel)
+    if(filepath.isEmpty()){
+        return;
+    }
+
+    QFile file(filepath); // Opens the file
+    current_file = filepath; // Set the current filename to the new filename
+
+    // Error handling if file cannot be opened
+    if(!file.open(QIODevice::ReadOnly | QFile::Text)){
+        QMessageBox::warning(this, "Warning", "Cannot open file : " + file.errorString());
+        return;
+    }
+
+    // Set the title of the window
+    // TODO change this to "Editor name - filename.txt"
+    setWindowTitle(current_file);
+
+    // Read the file contents
+    QTextStream in(&file);
+    QString text = in.readAll();
+
+    // Insert the text from the file into the text edit area
+    ui->textEdit->setText(text);
+    file.close(); // Close the file stream
+}

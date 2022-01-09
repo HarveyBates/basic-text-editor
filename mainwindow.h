@@ -9,6 +9,10 @@
 #include <QMessageBox> // Open message box (errors)
 #include <QPrinter> // Printer functions
 #include <QPrintDialog> // Printer dialog
+#include <QFileSystemModel> // Directory navigation
+#include <QTreeView> // File view
+#include <QSplitter> // Drag resizeable split
+#include <QSyntaxHighlighter> // Syntax highlighting for text edit
 
 QT_BEGIN_NAMESPACE
     namespace Ui { class MainWindow; }
@@ -19,6 +23,8 @@ class MainWindow : public QMainWindow {
 
     public:
         MainWindow(QWidget *parent = nullptr); // Window constructor
+        void setup_directories();
+        void open_file_from_tree(QString filepath);
         ~MainWindow(); // Destroy window
 
 private slots:
@@ -40,8 +46,12 @@ private slots:
 
         void on_actionRedo_triggered();
 
+        void on_treeView_expanded();
+
+        void on_treeView_doubleClicked(const QModelIndex &index);
+
 private:
         Ui::MainWindow *ui;
-        QString current_file = "";
+        QString current_file = "new.txt";
 };
 #endif // MAINWINDOW_H
